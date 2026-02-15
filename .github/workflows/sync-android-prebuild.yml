@@ -1,0 +1,46 @@
+name: Sync Android Native Files
+
+on:
+  push:
+    paths:
+      - app.json
+
+jobs:
+  prebuild:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # actions/checkout v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          # Check out the actual branch so we can push back to it.
+          # github.ref_name is the branch name on a push event.
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # actions/setup-node v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run expo prebuild
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Check for android/ changes
+        id: changes
+        run: |
+          git diff --quiet android/ || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit updated android/ files
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add android/
+          git commit -m "chore: sync android/ after app.json change [skip ci]"
+          git push
