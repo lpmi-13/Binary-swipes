@@ -17,5 +17,9 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 *.pem
-android/
 ios/
+# android/ is committed — built with Gradle directly, no EAS needed
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/

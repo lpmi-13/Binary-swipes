@@ -24,26 +24,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Set up Expo and EAS CLI
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK locally
-        run: eas build --platform android --profile preview --local --output ./build/binary-swipes.apk
-        env:
-          EAS_LOCAL_BUILD_SKIP_CLEANUP: "1"
+      - name: Build APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleRelease
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-swipes-apk-${{ github.sha }}
-          path: ./build/binary-swipes.apk
+          path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
