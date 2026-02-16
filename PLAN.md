@@ -18,7 +18,7 @@ player swipes left (lower) or right (higher) to navigate toward a target number.
 | Navigation | **expo-router** | File-based routing for screens (Home, Game, Results) |
 | State | **Zustand** | Lightweight store for game state, scores, and level progression |
 | Sound | **expo-av** | Swipe feedback sounds, level-up chimes |
-| CI/CD | **GitHub Actions + `eas build --local`** | Free APK artifact on every push to `main` |
+| CI/CD | **GitHub Actions + Gradle `assembleRelease`** | Build + test on CI, APK artifact on every push to `main`; Actions pinned to commit SHAs |
 
 ---
 
@@ -180,7 +180,8 @@ Binary-swipes/
 │   └── sounds/                   # Swipe, correct, wrong, level-up SFX
 ├── .github/
 │   └── workflows/
-│       └── build-apk.yml        # GitHub Actions APK build
+│       ├── build-apk.yml        # GitHub Actions APK build + test
+│       └── sync-android-prebuild.yml # Sync android/ on app.json changes
 ├── app.json                      # Expo config
 ├── eas.json                      # EAS build profiles
 ├── tsconfig.json
@@ -203,6 +204,32 @@ Binary-swipes/
 - [ ] Set up `.github/workflows/build-apk.yml` (details in §6)
 - [ ] Add a placeholder home screen to confirm the app runs
 - [ ] Verify CI produces a downloadable APK artifact
+
+### Phase 1.5 — Dependency Upgrades & Compatibility
+
+**Goal**: Upgrade to the latest stable Expo SDK and compatible dependencies,
+then confirm local start + Android release build + tests.
+
+- [ ] Inventory current versions from `package.json` / `package-lock.json`
+- [ ] Run `npx expo upgrade` to the latest stable SDK
+- [ ] Re-align Expo-managed packages with `npx expo install`:
+      `expo-asset`, `expo-av`, `expo-font`, `expo-haptics`, `expo-router`,
+      `expo-splash-screen`, `expo-status-bar`, `@expo/vector-icons`
+- [ ] Update RN ecosystem packages via `npx expo install`:
+      `react-native-gesture-handler`, `react-native-reanimated`,
+      `react-native-safe-area-context`, `react-native-screens`,
+      `@shopify/react-native-skia`
+- [ ] Upgrade dev tooling to SDK-compatible versions:
+      `jest`, `jest-expo`, `@types/react`, `typescript`, `@babel/core`
+- [ ] Regenerate lockfile with `npm install`
+- [ ] If config changes require native sync, run:
+      `npx expo prebuild --platform android --no-install`
+- [ ] Validate:
+      `npx expo doctor`
+      `npm test -- --watchAll=false --passWithNoTests`
+      `npm start`
+      `cd android && ./gradlew assembleRelease`
+- [ ] Stabilize any incompatibilities and re-run validations until green
 
 ### Phase 2 — BST Engine & Core Game Logic
 
@@ -274,8 +301,9 @@ Binary-swipes/
 
 ## 6. GitHub Actions — APK Build on Push to Main
 
-The workflow uses `eas build --local` to build entirely on the GitHub Actions
-runner (free, no EAS cloud costs).
+The workflow builds Android natively with Gradle on the GitHub Actions runner
+and runs tests first. GitHub Actions are pinned to commit SHAs for supply-chain
+hardening.
 
 ```yaml
 # .github/workflows/build-apk.yml
@@ -287,74 +315,123 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # actions/checkout v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      # actions/setup-node v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: npm
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watchAll=false --passWithNoTests
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      # actions/checkout v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      # actions/setup-node v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+
+      # actions/setup-java v4.8.0
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Set up Expo + EAS CLI
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install Android SDK components
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;26.1.10909125"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK locally
-        run: eas build --platform android --profile preview --local --output ./build/binary-swipes.apk
-        env:
-          EAS_LOCAL_BUILD_SKIP_CLEANUP: 1
+      - name: Build APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleRelease
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      # actions/upload-artifact v4.6.2
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: binary-swipes-apk
-          path: ./build/binary-swipes.apk
+          name: binary-swipes-apk-${{ github.sha }}
+          path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 ```
 
 **Required GitHub repo secrets**:
-- `EXPO_TOKEN` — generated at https://expo.dev/accounts/[you]/settings/access-tokens
-
-**`eas.json` config**:
-```json
-{
-  "cli": { "version": ">= 14.0.0" },
-  "build": {
-    "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "production": {
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  }
-}
-```
+- None (uses the default `GITHUB_TOKEN` only).
 
 After each push to `main`, go to the Actions tab → latest run → download the
 `binary-swipes-apk` artifact → unzip → install the APK on an Android device.
+
+### 6.1 Sync Android Native Files on `app.json` Change
+
+When `app.json` changes, a separate workflow runs `expo prebuild` and commits
+updated `android/` files back to the branch. Actions are pinned to SHAs.
+
+```yaml
+# .github/workflows/sync-android-prebuild.yml
+name: Sync Android Native Files
+
+on:
+  push:
+    paths:
+      - app.json
+
+jobs:
+  prebuild:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # actions/checkout v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # actions/setup-node v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run expo prebuild
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Check for android/ changes
+        id: changes
+        run: |
+          git diff --quiet android/ || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit updated android/ files
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add android/
+          git commit -m "chore: sync android/ after app.json change [skip ci]"
+          git push
+```
 
 ---
 
