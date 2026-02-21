@@ -84,7 +84,13 @@ export default function HomeScreen() {
         )}
 
         {/* Start button */}
-        <TouchableOpacity style={styles.startButton} onPress={handleStart} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={handleStart}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Start game"
+        >
           <Text style={styles.startButtonText}>START GAME</Text>
         </TouchableOpacity>
       </SafeAreaView>

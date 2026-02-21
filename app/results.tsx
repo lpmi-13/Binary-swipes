@@ -120,16 +120,34 @@ export default function ResultsScreen() {
         {/* Action buttons */}
         <View style={styles.actions}>
           {isLevelComplete && (
-            <TouchableOpacity style={styles.primaryButton} onPress={handleNextLevel} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleNextLevel}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Next level"
+            >
               <Text style={styles.primaryButtonText}>NEXT LEVEL</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleRetry} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleRetry}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={isLevelComplete ? 'Retry level' : 'Try again'}
+          >
             <Text style={styles.secondaryButtonText}>
               {isLevelComplete ? 'RETRY LEVEL' : 'TRY AGAIN'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.ghostButton} onPress={handleMenu} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.ghostButton}
+            onPress={handleMenu}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Main menu"
+          >
             <Text style={styles.ghostButtonText}>MAIN MENU</Text>
           </TouchableOpacity>
         </View>

@@ -10,7 +10,7 @@ player swipes left (lower) or right (higher) to navigate toward a target number.
 
 | Layer | Choice | Why |
 |---|---|---|
-| Framework | **Expo SDK 52+** (managed workflow) | Fast iteration, CNG for native modules, free `eas build --local` on CI |
+| Framework | **Expo SDK 54+** (managed workflow) | Fast iteration, CNG for native modules, free `eas build --local` on CI |
 | Language | **TypeScript** | Type safety for game state, tree structures, and animations |
 | Rendering | **@shopify/react-native-skia** | GPU-accelerated 2D canvas; perfect for the scrolling "toward you" effect |
 | Animation | **react-native-reanimated v4** | UI-thread worklets drive Skia shared values at 60 FPS without bridge hops |
@@ -197,12 +197,12 @@ Binary-swipes/
 
 **Goal**: Bootable Expo app that builds an APK on CI.
 
-- [ ] Initialize Expo project with TypeScript template
-- [ ] Install core dependencies (skia, reanimated, gesture-handler)
-- [ ] Configure `app.json` (package name: `com.binaryswipes.app`, Android-only)
-- [ ] Configure `eas.json` with a `preview` profile producing an APK
-- [ ] Set up `.github/workflows/build-apk.yml` (details in §6)
-- [ ] Add a placeholder home screen to confirm the app runs
+- [x] Initialize Expo project with TypeScript template
+- [x] Install core dependencies (skia, reanimated, gesture-handler)
+- [x] Configure `app.json` (package name: `com.binaryswipes.app`, Android-only)
+- [x] Configure `eas.json` with a `preview` profile producing an APK
+- [x] Set up `.github/workflows/build-apk.yml` (details in §6)
+- [x] Add a placeholder home screen to confirm the app runs
 - [ ] Verify CI produces a downloadable APK artifact
 
 ### Phase 1.5 — Dependency Upgrades & Compatibility
@@ -210,80 +210,88 @@ Binary-swipes/
 **Goal**: Upgrade to the latest stable Expo SDK and compatible dependencies,
 then confirm local start + Android release build + tests.
 
-- [ ] Inventory current versions from `package.json` / `package-lock.json`
-- [ ] Run `npx expo upgrade` to the latest stable SDK
-- [ ] Re-align Expo-managed packages with `npx expo install`:
+- [x] Inventory current versions from `package.json` / `package-lock.json`
+- [x] Run `npx expo upgrade` to the latest stable SDK
+- [x] Re-align Expo-managed packages with `npx expo install`:
       `expo-asset`, `expo-av`, `expo-font`, `expo-haptics`, `expo-router`,
       `expo-splash-screen`, `expo-status-bar`, `@expo/vector-icons`
-- [ ] Update RN ecosystem packages via `npx expo install`:
+- [x] Update RN ecosystem packages via `npx expo install`:
       `react-native-gesture-handler`, `react-native-reanimated`,
       `react-native-safe-area-context`, `react-native-screens`,
       `@shopify/react-native-skia`
-- [ ] Upgrade dev tooling to SDK-compatible versions:
+- [x] Upgrade dev tooling to SDK-compatible versions:
       `jest`, `jest-expo`, `@types/react`, `typescript`, `@babel/core`
-- [ ] Regenerate lockfile with `npm install`
+- [x] Regenerate lockfile with `npm install`
 - [ ] If config changes require native sync, run:
       `npx expo prebuild --platform android --no-install`
-- [ ] Validate:
-      `npx expo doctor`
+- [x] Validate dependency versions:
+      `npx expo install --check`
+- [x] Validate project health:
+      `npx expo doctor` (non-CNG warning only; no dependency mismatch)
+- [x] Validate tests:
       `npm test -- --watchAll=false --passWithNoTests`
+- [ ] Validate local dev server:
       `npm start`
+- [x] Validate Android release build:
       `cd android && ./gradlew assembleRelease`
-- [ ] Stabilize any incompatibilities and re-run validations until green
+- [x] Stabilize incompatibilities and re-run validations until green
+  - Aligned Expo peers in `package.json` (`expo-constants` and `expo-linking`)
+  - Updated Gradle wrapper to `8.13`
+  - Updated Android NDK requirement to `27.1.12297006`
 
 ### Phase 2 — BST Engine & Core Game Logic
 
 **Goal**: Pure-logic layer that generates trees and validates swipes.
 
-- [ ] Implement balanced BST generation (`src/engine/bst.ts`)
+- [x] Implement balanced BST generation (`src/engine/bst.ts`)
   - `generateBST(depth, min, max) → BSTNode`
   - `getPathToNode(root, target) → number[]`
   - `pickTarget(root, minDepth) → number`
-- [ ] Implement level configuration (`src/engine/levels.ts`)
+- [x] Implement level configuration (`src/engine/levels.ts`)
   - Maps level number → tree depth, value range, approach speed
-- [ ] Implement game state machine (`src/engine/gameLoop.ts`)
+- [x] Implement game state machine (`src/engine/gameLoop.ts`)
   - States: `IDLE → READY → APPROACHING → AWAITING_SWIPE → TRANSITIONING → LEVEL_COMPLETE | GAME_OVER`
   - Pure functions, no rendering dependencies
-- [ ] Unit tests for BST generation and path validation
+- [x] Unit tests for BST generation and path validation
 
 ### Phase 3 — Rendering & Animation
 
 **Goal**: Visual game that shows nodes approaching the player.
 
-- [ ] Build `GameCanvas.tsx` with Skia `<Canvas>`
-- [ ] Build `NodeSprite.tsx` — a node that scales from small (horizon) to
+- [x] Build `GameCanvas.tsx` with Skia `<Canvas>`
+- [x] Build `NodeSprite.tsx` — a node that scales from small (horizon) to
       large (swipe zone), driven by a shared value
-- [ ] Build `TreeBackground.tsx` — draws the binary tree structure with
+- [x] Build `TreeBackground.tsx` — draws the binary tree structure with
       perspective scaling; pans as the player navigates
-- [ ] Build `HUD.tsx` — target number, current level, score
-- [ ] Wire up Reanimated timing animations for node approach
-- [ ] Implement the camera pan/transition when moving to a child node
+- [x] Build `HUD.tsx` — target number, current level, score
+- [x] Wire up Reanimated timing animations for node approach
+- [x] Implement the camera pan/transition when moving to a child node
 
 ### Phase 4 — Gesture Input & Game Integration
 
 **Goal**: Playable game loop with swipe controls.
 
-- [ ] Build `SwipeZone.tsx` with `react-native-gesture-handler` Fling or Pan
+- [x] Build `SwipeZone.tsx` with `react-native-gesture-handler` Fling or Pan
       gesture detecting left/right swipes
-- [ ] Build `useSwipeGesture.ts` hook that emits `'left' | 'right'` events
-- [ ] Build `useGameEngine.ts` hook that wires gesture events → game state
+- [x] Build `useSwipeGesture.ts` hook that emits `'left' | 'right'` events
+- [x] Build `useGameEngine.ts` hook that wires gesture events → game state
       machine → animation triggers
-- [ ] Build Zustand store for score, current level, high score (persisted
+- [x] Build Zustand store for score, current level, high score (persisted
       with `zustand/middleware` + AsyncStorage)
-- [ ] Integrate everything in `app/game.tsx`
-- [ ] Add swipe feedback (visual flash, optional haptics via `expo-haptics`)
+- [x] Integrate everything in `app/game.tsx`
+- [x] Add swipe feedback (visual flash, optional haptics via `expo-haptics`)
 
 ### Phase 5 — Screens & Polish
 
 **Goal**: Complete user-facing app.
 
-- [ ] Home screen (`app/index.tsx`): Title, "Start" button, high score display
-- [ ] Results screen (`app/results.tsx`): Score summary, "Play Again" / "Home"
-- [ ] Add sound effects with `expo-av` (swipe, correct, wrong, level-up)
-- [ ] Add countdown (3, 2, 1) before each level starts
-- [ ] Visual polish: node entrance/exit animations, background parallax,
+- [x] Home screen (`app/index.tsx`): Title, "Start" button, high score display
+- [x] Results screen (`app/results.tsx`): Score summary, "Play Again" / "Home"
+- [x] Add sound effects with `expo-av` (swipe, correct, wrong, level-up)
+- [x] Add countdown (3, 2, 1) before each level starts
+- [x] Visual polish: node entrance/exit animations, background parallax,
       color themes per level bracket
-- [ ] Timeout handling: if player doesn't swipe in time → game over
+- [x] Timeout handling: if player doesn't swipe in time → game over
 
 ### Phase 6 — Testing & Release Prep
 
@@ -291,9 +299,9 @@ then confirm local start + Android release build + tests.
 
 - [ ] Playtest on multiple Android devices / emulators
 - [ ] Performance profiling (target consistent 60 FPS)
-- [ ] Accessibility: ensure text contrast, consider colorblind-friendly palette
-- [ ] App icon and splash screen
-- [ ] Update `README.md` with project description, screenshots, install
+- [x] Accessibility: ensure text contrast, consider colorblind-friendly palette
+- [x] App icon and splash screen
+- [x] Update `README.md` with project description, screenshots, install
       instructions
 - [ ] (Future) Google Play Store listing prep
 
@@ -358,7 +366,7 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platforms;android-35" \
             "build-tools;35.0.0" \
-            "ndk;26.1.10909125"
+            "ndk;27.1.12297006"
 
       - name: Install dependencies
         run: npm ci
@@ -468,7 +476,7 @@ level, game phase), Zustand is the right weight class.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Skia performance on low-end Android | Choppy animations | Profile early on budget device; reduce particle effects; use `<Atlas>` for batch rendering |
-| Reanimated v4 requires New Architecture | Build issues on older RN | Expo SDK 52+ enables New Architecture by default; stay on supported versions |
+| Reanimated v4 requires New Architecture | Build issues on older RN | Expo SDK 54+ enables New Architecture by default; stay on supported versions |
 | `eas build --local` flakiness on CI | Blocked releases | Pin EAS CLI version; cache Gradle/NDK; add retry step |
 | Gesture detection feels laggy | Bad gameplay | Gesture handler runs on native thread (not JS); tune fling velocity thresholds |
 | Tree generation produces unbalanced paths | Unfair difficulty | Use explicit balanced BST algorithm; constrain target to nodes at depth ≥ 2 |

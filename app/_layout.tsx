@@ -4,12 +4,17 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { preloadSounds, unloadSounds } from '../src/utils/sounds';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
+    preloadSounds();
+    return () => {
+      unloadSounds();
+    };
   }, []);
 
   return (

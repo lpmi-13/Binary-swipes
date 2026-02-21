@@ -3,7 +3,7 @@ import { Canvas, RoundedRect, Text, useFont, Group, Shadow } from '@shopify/reac
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { StyleSheet } from 'react-native';
-import { COLORS, LAYOUT } from '../constants/theme';
+import { LAYOUT, type Theme } from '../constants/theme';
 
 interface NodeSpriteProps {
   value: number;
@@ -15,6 +15,7 @@ interface NodeSpriteProps {
   exitX: SharedValue<number>;
   /** true when this is the wrong-swipe flash frame */
   isWrong?: boolean;
+  theme: Theme;
 }
 
 const FULL_NODE_WIDTH = 200;
@@ -27,24 +28,13 @@ export function NodeSprite({
   screenHeight,
   progress,
   exitX,
+  theme,
 }: NodeSpriteProps) {
-  // Interpolate size: small at horizon, full at swipe zone, overshoot past
-  const animatedStyle = useAnimatedStyle(() => {
-    const p = progress.value;
-    const scale = interpolate(p, [0, 1, 1.3], [0.12, 1.0, 1.4], Extrapolation.CLAMP);
-    const targetY = screenHeight * LAYOUT.swipeZoneY;
-    const horizonY = screenHeight * LAYOUT.horizonY;
-    const y = interpolate(p, [0, 1, 1.3], [horizonY, targetY, screenHeight * 1.1], Extrapolation.CLAMP);
-    const centreX = screenWidth / 2;
-    const exitOffset = exitX.value * screenWidth * 0.6;
-
-    return {
-      transform: [
-        { translateX: centreX - (FULL_NODE_WIDTH * scale) / 2 + exitOffset },
-        { translateY: y - (FULL_NODE_HEIGHT * scale) / 2 },
-        { scale },
-      ],
-    };
+  const animatedStyle = useNodeAnimatedStyle({
+    progress,
+    exitX,
+    screenWidth,
+    screenHeight,
   });
 
   const nodeWidth = FULL_NODE_WIDTH;
@@ -62,9 +52,9 @@ export function NodeSprite({
             width={nodeWidth - 8}
             height={nodeHeight - 8}
             r={CORNER_RADIUS}
-            color={COLORS.nodeCurrent}
+            color={theme.nodeCurrent}
           >
-            <Shadow dx={0} dy={4} blur={12} color="rgba(66,165,245,0.4)" />
+            <Shadow dx={0} dy={4} blur={12} color="rgba(0,0,0,0.35)" />
           </RoundedRect>
           <RoundedRect
             x={4}
@@ -72,7 +62,7 @@ export function NodeSprite({
             width={nodeWidth - 8}
             height={nodeHeight - 8}
             r={CORNER_RADIUS}
-            color={COLORS.nodeCurrentBorder}
+            color={theme.nodeCurrentBorder}
             style="stroke"
             strokeWidth={2.5}
           />
@@ -105,28 +95,46 @@ export function NodeNumber({
   nodeWidth,
   nodeHeight,
   fontSize,
+  progress,
+  exitX,
+  screenWidth,
+  screenHeight,
+  theme,
 }: {
   value: string;
   nodeWidth: number;
   nodeHeight: number;
   fontSize: number;
+  progress: SharedValue<number>;
+  exitX: SharedValue<number>;
+  screenWidth: number;
+  screenHeight: number;
+  theme: Theme;
 }) {
-  const { StyleSheet } = require('react-native');
   const { Text: RNText, View } = require('react-native');
+  const animatedStyle = useNodeAnimatedStyle({
+    progress,
+    exitX,
+    screenWidth,
+    screenHeight,
+  });
   return (
-    <View
-      style={{
-        position: 'absolute',
-        width: nodeWidth,
-        height: nodeHeight,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          width: nodeWidth,
+          height: nodeHeight,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        animatedStyle,
+      ]}
       pointerEvents="none"
     >
       <RNText
         style={{
-          color: COLORS.textPrimary,
+          color: theme.textPrimary,
           fontSize,
           fontWeight: '700',
           letterSpacing: 1,
@@ -134,7 +142,7 @@ export function NodeNumber({
       >
         {value}
       </RNText>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -143,3 +151,35 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
 });
+
+function useNodeAnimatedStyle({
+  progress,
+  exitX,
+  screenWidth,
+  screenHeight,
+}: {
+  progress: SharedValue<number>;
+  exitX: SharedValue<number>;
+  screenWidth: number;
+  screenHeight: number;
+}) {
+  return useAnimatedStyle(() => {
+    const p = progress.value;
+    const scale = interpolate(p, [0, 1, 1.3], [0.12, 1.0, 1.4], Extrapolation.CLAMP);
+    const targetY = screenHeight * LAYOUT.swipeZoneY;
+    const horizonY = screenHeight * LAYOUT.horizonY;
+    const y = interpolate(p, [0, 1, 1.3], [horizonY, targetY, screenHeight * 1.1], Extrapolation.CLAMP);
+    const centreX = screenWidth / 2;
+    const exitOffset = exitX.value * screenWidth * 0.6;
+    const opacity = interpolate(p, [0, 0.2, 1, 1.3], [0, 0.7, 1, 0], Extrapolation.CLAMP);
+
+    return {
+      opacity,
+      transform: [
+        { translateX: centreX - (FULL_NODE_WIDTH * scale) / 2 + exitOffset },
+        { translateY: y - (FULL_NODE_HEIGHT * scale) / 2 },
+        { scale },
+      ],
+    };
+  });
+}

@@ -6,15 +6,16 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
-import { COLORS } from '../constants/theme';
+import type { Theme } from '../constants/theme';
 
 interface CountdownOverlayProps {
   countdownValue: SharedValue<number>;
+  theme: Theme;
 }
 
 const LABELS = ['GO!', '1', '2', '3'];
 
-export function CountdownOverlay({ countdownValue }: CountdownOverlayProps) {
+export function CountdownOverlay({ countdownValue, theme }: CountdownOverlayProps) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {LABELS.map((label, idx) => {
@@ -25,6 +26,7 @@ export function CountdownOverlay({ countdownValue }: CountdownOverlayProps) {
             label={label}
             digit={digit}
             countdownValue={countdownValue}
+            theme={theme}
           />
         );
       })}
@@ -36,10 +38,12 @@ function CountdownDigit({
   label,
   digit,
   countdownValue,
+  theme,
 }: {
   label: string;
   digit: number;
   countdownValue: SharedValue<number>;
+  theme: Theme;
 }) {
   const animStyle = useAnimatedStyle(() => {
     const diff = Math.abs(countdownValue.value - digit);
@@ -50,7 +54,7 @@ function CountdownDigit({
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.centre, animStyle]}>
-      <Animated.Text style={styles.text}>{label}</Animated.Text>
+      <Animated.Text style={[styles.text, { color: theme.gold }]}>{label}</Animated.Text>
     </Animated.View>
   );
 }
@@ -61,7 +65,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    color: COLORS.gold,
     fontSize: 96,
     fontWeight: '900',
     textShadowColor: 'rgba(255,215,0,0.4)',

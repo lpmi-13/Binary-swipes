@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { Canvas, Path, Skia, Group, Paint } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia, Group } from '@shopify/react-native-skia';
 import type { BSTNode } from '../engine/bst';
-import { COLORS, LAYOUT } from '../constants/theme';
+import { LAYOUT, type Theme } from '../constants/theme';
 
 interface NodePosition {
   x: number;
@@ -20,6 +20,7 @@ interface TreeBackgroundProps {
   visitedValues: Set<number>;
   /** The target value */
   targetValue: number;
+  theme: Theme;
 }
 
 /**
@@ -33,6 +34,7 @@ export function TreeBackground({
   currentValue,
   visitedValues,
   targetValue,
+  theme,
 }: TreeBackgroundProps) {
   const { positions, edgePath } = useMemo(() => {
     if (!root) return { positions: [], edgePath: '' };
@@ -103,11 +105,6 @@ export function TreeBackground({
 
   if (!root) return null;
 
-  const paint = Skia.Paint();
-  paint.setColor(Skia.Color(COLORS.edgeLine));
-  paint.setStrokeWidth(LAYOUT.treeLineWidth);
-  paint.setStyle(1); // Stroke
-
   const path = Skia.Path.MakeFromSVGString(edgePath || 'M 0 0');
 
   return (
@@ -117,7 +114,7 @@ export function TreeBackground({
         {path && (
           <Path
             path={path}
-            color={COLORS.edgeLine}
+            color={theme.edgeLine}
             style="stroke"
             strokeWidth={LAYOUT.treeLineWidth}
             opacity={0.6}
@@ -130,24 +127,24 @@ export function TreeBackground({
           const isTarget = pos.value === targetValue;
           const isVisited = visitedValues.has(pos.value);
 
-          let fillColor: string = COLORS.nodeVisited;
-          let borderColor: string = COLORS.nodeVisitedBorder;
+          let fillColor: string = theme.nodeVisited;
+          let borderColor: string = theme.nodeVisitedBorder;
           let r = 10;
           let opacity = 0.4;
 
           if (isCurrent) {
-            fillColor = COLORS.nodeCurrent;
-            borderColor = COLORS.nodeCurrentBorder;
+            fillColor = theme.nodeCurrent;
+            borderColor = theme.nodeCurrentBorder;
             r = 14;
             opacity = 1.0;
           } else if (isTarget) {
-            fillColor = COLORS.nodeTarget;
-            borderColor = COLORS.nodeTargetBorder;
+            fillColor = theme.nodeTarget;
+            borderColor = theme.nodeTargetBorder;
             r = 12;
             opacity = 0.9;
           } else if (!isVisited) {
-            fillColor = COLORS.nodeDefault;
-            borderColor = COLORS.nodeDefaultBorder;
+            fillColor = theme.nodeDefault;
+            borderColor = theme.nodeDefaultBorder;
             r = 10;
             opacity = 0.7;
           }

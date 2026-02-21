@@ -22,10 +22,10 @@ complete. Every level increases speed and tree depth.
 
 | Layer | Library |
 |---|---|
-| Framework | Expo SDK 52 (managed workflow, New Architecture) |
+| Framework | Expo SDK 54 (managed workflow, New Architecture) |
 | Language | TypeScript |
 | Rendering | @shopify/react-native-skia |
-| Animation | react-native-reanimated v3 |
+| Animation | react-native-reanimated v4 |
 | Gestures | react-native-gesture-handler |
 | Navigation | expo-router |
 | State | Zustand |
@@ -143,8 +143,8 @@ Then commit the updated `android/` files.
 
 ## Roadmap
 
-- [ ] Persistent high score (AsyncStorage)
-- [ ] Sound effects (swipe, correct, wrong, level-up)
+- [x] Persistent high score (AsyncStorage)
+- [x] Sound effects (swipe, correct, wrong, level-up)
 - [ ] Particle trail on approaching nodes
 - [ ] Colour theme unlocks per level bracket
 - [ ] Google Play Store release

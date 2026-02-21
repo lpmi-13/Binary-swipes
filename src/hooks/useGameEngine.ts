@@ -10,6 +10,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useGameStore } from '../store/gameStore';
 import type { SwipeDirection } from '../engine/gameLoop';
+import { playSound } from '../utils/sounds';
 
 export interface GameAnimValues {
   /** 0 = at horizon, 1 = at swipe zone */
@@ -117,11 +118,13 @@ export function useGameEngine(): GameAnimValues {
       wrongFlash.value = 1;
       wrongFlash.value = withDelay(50, withTiming(0, { duration: 500 }));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      playSound('wrong');
     }
 
     if (phase === 'LEVEL_COMPLETE') {
       clearSwipeTimeout();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playSound('level');
     }
   }, [phase]);
 
@@ -129,12 +132,14 @@ export function useGameEngine(): GameAnimValues {
   const handleSwipe = useCallback(
     (direction: SwipeDirection) => {
       const correct = onSwipe(direction);
+      playSound('swipe');
       if (correct) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         nodeExitX.value = withTiming(direction === 'left' ? -1 : 1, {
           duration: 200,
           easing: Easing.in(Easing.quad),
         });
+        playSound('correct');
       }
     },
     [onSwipe, nodeExitX],

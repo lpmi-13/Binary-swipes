@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Canvas, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
+import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { useGameStore } from '../store/gameStore';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
@@ -9,7 +10,7 @@ import { NodeSprite, NodeNumber } from './NodeSprite';
 import { SwipeZone } from './SwipeZone';
 import { HUD } from './HUD';
 import { CountdownOverlay } from './CountdownOverlay';
-import { COLORS } from '../constants/theme';
+import { COLORS, getThemeForLevel } from '../constants/theme';
 import type { SwipeDirection } from '../engine/gameLoop';
 
 const FULL_NODE_WIDTH = 200;
@@ -58,29 +59,54 @@ export function GameCanvas() {
     phase === 'AWAITING_SWIPE' ||
     phase === 'TRANSITIONING';
 
+  const theme = getThemeForLevel(level);
+
+  const backgroundStyle = useAnimatedStyle(() => {
+    const p = nodeProgress.value;
+    const shift = interpolate(p, [0, 1], [0, -18], Extrapolation.CLAMP);
+    const scale = interpolate(p, [0, 1], [1, 1.03], Extrapolation.CLAMP);
+    return {
+      transform: [{ translateY: shift }, { scale }],
+    };
+  });
+
+  const treeStyle = useAnimatedStyle(() => {
+    const p = nodeProgress.value;
+    const shift = interpolate(p, [0, 1], [0, 12], Extrapolation.CLAMP);
+    const sway = interpolate(nodeExitX.value, [-1, 1], [-10, 10], Extrapolation.CLAMP);
+    return {
+      transform: [{ translateY: shift }, { translateX: sway }],
+    };
+  });
+
   return (
     <View style={styles.root}>
       {/* Background gradient */}
-      <Canvas style={{ position: 'absolute', top: 0, left: 0, width, height }}>
-        <Rect x={0} y={0} width={width} height={height}>
-          <LinearGradient
-            start={vec(width / 2, 0)}
-            end={vec(width / 2, height)}
-            colors={[COLORS.background, COLORS.backgroundGradientEnd]}
-          />
-        </Rect>
-      </Canvas>
+      <Animated.View style={[StyleSheet.absoluteFill, backgroundStyle]} pointerEvents="none">
+        <Canvas style={{ width, height }}>
+          <Rect x={0} y={0} width={width} height={height}>
+            <LinearGradient
+              start={vec(width / 2, 0)}
+              end={vec(width / 2, height)}
+              colors={[theme.background, theme.backgroundGradientEnd]}
+            />
+          </Rect>
+        </Canvas>
+      </Animated.View>
 
       {/* Binary tree background */}
       {currentLevel && (
-        <TreeBackground
-          width={width}
-          height={height}
-          root={currentLevel.root}
-          currentValue={currentValue}
-          visitedValues={visitedValues}
-          targetValue={target}
-        />
+        <Animated.View style={[StyleSheet.absoluteFill, treeStyle]} pointerEvents="none">
+          <TreeBackground
+            width={width}
+            height={height}
+            root={currentLevel.root}
+            currentValue={currentValue}
+            visitedValues={visitedValues}
+            targetValue={target}
+            theme={theme}
+          />
+        </Animated.View>
       )}
 
       {/* HUD */}
@@ -89,6 +115,7 @@ export function GameCanvas() {
         level={level}
         score={score}
         highScore={highScore}
+        theme={theme}
       />
 
       {/* Swipe zone + approaching node */}
@@ -97,6 +124,7 @@ export function GameCanvas() {
         screenWidth={width}
         screenHeight={height}
         wrongFlash={wrongFlash}
+        theme={theme}
       >
         {showNode && (
           <>
@@ -106,12 +134,18 @@ export function GameCanvas() {
               screenHeight={height}
               progress={nodeProgress}
               exitX={nodeExitX}
+              theme={theme}
             />
             <NodeNumber
               value={String(currentValue)}
               nodeWidth={FULL_NODE_WIDTH}
               nodeHeight={FULL_NODE_HEIGHT}
               fontSize={38}
+              progress={nodeProgress}
+              exitX={nodeExitX}
+              screenWidth={width}
+              screenHeight={height}
+              theme={theme}
             />
           </>
         )}
@@ -119,7 +153,7 @@ export function GameCanvas() {
 
       {/* Countdown 3-2-1 */}
       {showCountdown && (
-        <CountdownOverlay countdownValue={countdownValue} />
+        <CountdownOverlay countdownValue={countdownValue} theme={theme} />
       )}
     </View>
   );

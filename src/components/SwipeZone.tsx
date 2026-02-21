@@ -1,10 +1,10 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import type { ComposedGesture, GestureType } from 'react-native-gesture-handler';
-import { COLORS, LAYOUT } from '../constants/theme';
+import { LAYOUT, type Theme } from '../constants/theme';
 
 interface SwipeZoneProps {
   gesture: ComposedGesture | GestureType;
@@ -12,6 +12,7 @@ interface SwipeZoneProps {
   screenHeight: number;
   wrongFlash: SharedValue<number>;
   children?: React.ReactNode;
+  theme: Theme;
 }
 
 export function SwipeZone({
@@ -19,6 +20,7 @@ export function SwipeZone({
   screenWidth,
   screenHeight,
   wrongFlash,
+  theme,
   children,
 }: SwipeZoneProps) {
   const flashStyle = useAnimatedStyle(() => ({
@@ -34,7 +36,7 @@ export function SwipeZone({
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: COLORS.swipeLeft },
+            { backgroundColor: theme.swipeLeft },
             flashStyle,
           ]}
           pointerEvents="none"
@@ -49,7 +51,10 @@ export function SwipeZone({
             },
           ]}
           pointerEvents="none"
-        />
+        >
+          <Text style={[styles.hintText, { color: theme.swipeLeft }]}>◀ LEFT</Text>
+          <Text style={[styles.hintText, { color: theme.swipeRight }]}>RIGHT ▶</Text>
+        </View>
       </View>
     </GestureDetector>
   );
@@ -63,5 +68,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 32,
+  },
+  hintText: {
+    fontSize: 12,
+    letterSpacing: 2,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
 });
